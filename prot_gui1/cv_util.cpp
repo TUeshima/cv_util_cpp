@@ -63,3 +63,76 @@ cv::Mat cv_util::kmean(const cv::Mat& m, int num)
 	}
 	return m0;
 }
+
+cv::Mat cv_util::contrast(const cv::Mat& m, float a)
+{
+	/*
+	cv::Mat m_clone = m.clone();
+	std::vector<cv::Mat> channels;
+	if (m_clone.channels() == 1)
+	{
+		channels.push_back(m_clone);
+	}
+	else if (m_clone.channels() >= 3)
+	{
+		cv::split(m_clone, channels);
+	}
+
+	cv::Mat lut(256, 1, CV_8UC1);
+	for (int i = 0; i < 256; ++i)
+	{
+		float aa = 255.0f / (1 + exp(-a * (i - 128) / 255));
+		lut.at<uchar>(i, 0) = aa;
+	}
+	int c = m_clone.channels() == 1 ? 1 : 3;
+
+	for (int i = 0; i < c; ++i)
+	{
+		cv::Mat channel;
+		cv::LUT(channels[i], lut, channels[i]);
+	}
+
+	cv::Mat ret;
+	cv::merge(channels, ret);
+	return ret;
+	*/
+	std::function< float(float) > f = [=](float i) { return 255.0f / (1 + exp(-a * (i - 128) / 255)); };
+	return cv_util::lut(m, f);
+}
+
+cv::Mat cv_util::gamma(const cv::Mat& m, float a)
+{
+	std::function< float(float) > f = [=](float i) { return 255.0f * pow(i/255.0f, 1.0f/a); };
+	return cv_util::lut(m, f);
+}
+
+cv::Mat cv_util::lut(const cv::Mat& m, std::function<float(float)> f_lut)
+{
+	cv::Mat m_clone = m.clone();
+	std::vector<cv::Mat> channels;
+	if (m_clone.channels() == 1)
+	{
+		channels.push_back(m_clone);
+	}
+	else if (m_clone.channels() >= 3)
+	{
+		cv::split(m_clone, channels);
+	}
+
+	cv::Mat lut(256, 1, CV_8UC1);
+	for (int i = 0; i < 256; ++i)
+	{
+		lut.at<uchar>(i, 0) = f_lut(i);
+	}
+	int c = m_clone.channels() == 1 ? 1 : 3;
+
+	for (int i = 0; i < c; ++i)
+	{
+		cv::Mat channel;
+		cv::LUT(channels[i], lut, channels[i]);
+	}
+
+	cv::Mat ret;
+	cv::merge(channels, ret);
+	return ret;
+}
