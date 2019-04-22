@@ -8,5 +8,5 @@ public:
 	static cv::Mat load_mat(const std::string& path);
 	static void paste(cv::Mat dst, cv::Mat src, int x, int y, int width, int height);
 	static void paste(cv::Mat dst, cv::Mat src, int x, int y);
+	static cv::Mat kmean(const cv::Mat& m, int num);
 };
-
