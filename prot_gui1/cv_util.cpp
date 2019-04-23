@@ -7,6 +7,9 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+using namespace cv;
+using namespace std;
+
 cv::Mat cv_util::load_mat(const std::string& path)
 {
 	cv::Mat mat = cv::imread(path);
@@ -66,36 +69,6 @@ cv::Mat cv_util::kmean(const cv::Mat& m, int num)
 
 cv::Mat cv_util::contrast(const cv::Mat& m, float a)
 {
-	/*
-	cv::Mat m_clone = m.clone();
-	std::vector<cv::Mat> channels;
-	if (m_clone.channels() == 1)
-	{
-		channels.push_back(m_clone);
-	}
-	else if (m_clone.channels() >= 3)
-	{
-		cv::split(m_clone, channels);
-	}
-
-	cv::Mat lut(256, 1, CV_8UC1);
-	for (int i = 0; i < 256; ++i)
-	{
-		float aa = 255.0f / (1 + exp(-a * (i - 128) / 255));
-		lut.at<uchar>(i, 0) = aa;
-	}
-	int c = m_clone.channels() == 1 ? 1 : 3;
-
-	for (int i = 0; i < c; ++i)
-	{
-		cv::Mat channel;
-		cv::LUT(channels[i], lut, channels[i]);
-	}
-
-	cv::Mat ret;
-	cv::merge(channels, ret);
-	return ret;
-	*/
 	std::function< float(float) > f = [=](float i) { return 255.0f / (1 + exp(-a * (i - 128) / 255)); };
 	return cv_util::lut(m, f);
 }
@@ -133,6 +106,124 @@ cv::Mat cv_util::lut(const cv::Mat& m, std::function<float(float)> f_lut)
 	}
 
 	cv::Mat ret;
+	cv::merge(channels, ret);
+	return ret;
+}
+
+std::string cv_util::get_mat_depth(const cv::Mat& mat)
+{
+	const int depth = mat.depth();
+
+	switch (depth)
+	{
+	case CV_8U:  return "CV_8U";
+	case CV_8S:  return "CV_8S";
+	case CV_16U: return "CV_16U";
+	case CV_16S: return "CV_16S";
+	case CV_32S: return "CV_32S";
+	case CV_32F: return "CV_32F";
+	case CV_64F: return "CV_64F";
+	default:
+		return "Invalid depth type of matrix!";
+	}
+}
+
+std::string cv_util::get_mat_type(const cv::Mat& mat)
+{
+	const int mtype = mat.type();
+
+	switch (mtype)
+	{
+	case CV_8UC1:  return "CV_8UC1";
+	case CV_8UC2:  return "CV_8UC2";
+	case CV_8UC3:  return "CV_8UC3";
+	case CV_8UC4:  return "CV_8UC4";
+
+	case CV_8SC1:  return "CV_8SC1";
+	case CV_8SC2:  return "CV_8SC2";
+	case CV_8SC3:  return "CV_8SC3";
+	case CV_8SC4:  return "CV_8SC4";
+
+	case CV_16UC1: return "CV_16UC1";
+	case CV_16UC2: return "CV_16UC2";
+	case CV_16UC3: return "CV_16UC3";
+	case CV_16UC4: return "CV_16UC4";
+
+	case CV_16SC1: return "CV_16SC1";
+	case CV_16SC2: return "CV_16SC2";
+	case CV_16SC3: return "CV_16SC3";
+	case CV_16SC4: return "CV_16SC4";
+
+	case CV_32SC1: return "CV_32SC1";
+	case CV_32SC2: return "CV_32SC2";
+	case CV_32SC3: return "CV_32SC3";
+	case CV_32SC4: return "CV_32SC4";
+
+	case CV_32FC1: return "CV_32FC1";
+	case CV_32FC2: return "CV_32FC2";
+	case CV_32FC3: return "CV_32FC3";
+	case CV_32FC4: return "CV_32FC4";
+
+	case CV_64FC1: return "CV_64FC1";
+	case CV_64FC2: return "CV_64FC2";
+	case CV_64FC3: return "CV_64FC3";
+	case CV_64FC4: return "CV_64FC4";
+
+	default:
+		return "Invalid type of matrix!";
+	}
+}
+
+cv::Mat cv_util::to_r(const cv::Mat& m)
+{
+	std::vector<Mat> channels;
+	cv::split(m, channels);
+	return channels[0];
+}
+
+cv::Mat cv_util::to_rgba(const cv::Mat& m)
+{
+	if (m.depth() != CV_8U) throw std::exception("to_rgba needs CV_8U");
+
+	int num = m.channels();
+	if (num == 4) return m;
+	if (num == 2) throw std::exception("to_rgba invalid channel num 2");
+	std::vector<Mat> channels;
+	cv::split(m, channels);
+	if (num == 3) {
+		Mat alpha = channels[0].clone();
+		alpha.setTo(255);
+		channels.push_back(alpha);
+	}
+	if (num == 1) {
+		channels.push_back(m.clone());
+		channels.push_back(m.clone());
+		Mat alpha = channels[0].clone();
+		alpha.setTo(255);
+		channels.push_back(alpha);
+	}
+	Mat ret;
+	cv::merge(channels, ret);
+	return ret;
+}
+
+cv::Mat cv_util::to_rgb(const cv::Mat& m)
+{
+	if (m.depth() != CV_8U) throw std::exception("to_rgba needs CV_8U");
+
+	int num = m.channels();
+	if (num == 3) return m;
+	if (num == 2) throw std::exception("to_rgba invalid channel num 2");
+	std::vector<Mat> channels;
+	cv::split(m, channels);
+	if (num == 4) {
+		channels.pop_back();
+	}
+	if (num == 1) {
+		channels.push_back(m.clone());
+		channels.push_back(m.clone());
+	}
+	Mat ret;
 	cv::merge(channels, ret);
 	return ret;
 }
